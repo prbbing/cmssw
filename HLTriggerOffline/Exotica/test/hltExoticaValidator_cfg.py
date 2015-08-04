@@ -9,10 +9,10 @@ process.load("DQMServices.Components.MEtoEDMConverter_cfi")
 # Decide input data
 myinput   = ""
 myfileNames = cms.untracked.vstring(
-    #'/store/relval/CMSSW_7_2_0_pre1/RelValZEE_13/GEN-SIM-RECO/POSTLS172_V1-v1/00000/0A69FE2A-DAFD-E311-9FA2-00261894391C.root',
-    #'/store/relval/CMSSW_7_2_0_pre1/RelValZEE_13/GEN-SIM-RECO/POSTLS172_V1-v1/00000/4ACF05B1-ABFD-E311-BC8C-0026189438BC.root'
-    'file:/results_exo_nobptx.root'
-    )
+        'root://cmsxrootd.fnal.gov//store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/AE88F98D-6A27-E511-A0B2-0025905A497A.root',
+        'root://cmsxrootd.fnal.gov//store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/C8BE2F8C-6327-E511-8A61-0025905A612E.root',
+        'root://cmsxrootd.fnal.gov//store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/CCA152D1-6927-E511-9494-002618943821.root'
+     )
 
 for i in range(0,len(sys.argv)):
     if str(sys.argv[i])=="_input" and len(sys.argv)>i+1:
@@ -34,6 +34,13 @@ elif myinput=="ZpEE" :
     myfileNames = cms.untracked.vstring(
         '/store/relval/CMSSW_7_2_0_pre1/RelValZpEE_2250_13TeV_Tauola/GEN-SIM-RECO/POSTLS172_V1-v1/00000/343EDE59-F9FD-E311-898D-0025905A612A.root',
         '/store/relval/CMSSW_7_2_0_pre1/RelValZpEE_2250_13TeV_Tauola/GEN-SIM-RECO/POSTLS172_V1-v1/00000/E2A8B37B-FDFD-E311-8018-002618943849.root')
+
+elif myinput=="DisplacedSUSY" :
+    myfileNames = cms.untracked.vstring(
+        '/store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/AE88F98D-6A27-E511-A0B2-0025905A497A.root',
+        '/store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/C8BE2F8C-6327-E511-8A61-0025905A612E.root',
+        '/store/relval/CMSSW_7_5_0_pre4/RelValDisplacedSUSY_stopToBottom_M_300_1000mm_13/GEN-SIM-RECO/MCRUN2_75_V1-v1/00000/CCA152D1-6927-E511-9494-002618943821.root'
+     )
 
 elif myinput=="ZpMM" :
     myfileNames = cms.untracked.vstring(
@@ -199,7 +206,7 @@ process.source = cms.Source("PoolSource", fileNames=myfileNames)
 process.DQMStore = cms.Service("DQMStore")
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 2000
 process.MessageLogger.destinations += ['ExoticaValidationMessages']
 process.MessageLogger.categories   += ['ExoticaValidation']
 #process.MessageLogger.debugModules += ['HLTExoticaValidator','HLTExoticaSubAnalysis','HLTExoticaPlotter']

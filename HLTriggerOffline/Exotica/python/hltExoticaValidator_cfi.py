@@ -50,31 +50,31 @@ hltExoticaValidator = cms.EDAnalyzer(
     # appears in Run summary/Exotica/ANALYSIS_NAME
 
     analysis       = cms.vstring(
-        "LowPtTrimuon",
-        "HighPtDimuon",
-        "HighPtDielectron",
-        "LowPtDimuon",
-        "LowPtDielectron",
-        "HighPtElectron",
+        #"LowPtTrimuon",
+        #"HighPtDimuon",
+        #"HighPtDielectron",
+        #"LowPtDimuon",
+        #"LowPtDielectron",
+        #"HighPtElectron",
         #"LowPtElectron",
-        "HighPtPhoton",
-        "DiPhoton",
-        "SingleMuon",
-        "JetNoBptx",
-        "MuonNoBptx",
-        "HT",
-        "DisplacedMuEG",
-        "DisplacedMuJet",
+        #"HighPtPhoton",
+        #"DiPhoton",
+        #"SingleMuon",
+        #"JetNoBptx",
+        #"MuonNoBptx",
+        #"HT",
+        #"DisplacedMuEG",
+        #"DisplacedMuJet",
         "DisplacedDimuon",
-        "DisplacedL2Dimuon",
-        "PureMET",
-        "METplusTrack",
-        "Monojet",
-        "MonojetBackup",
+        #"DisplacedL2Dimuon",
+        #"PureMET",
+        #"METplusTrack",
+        #"Monojet",
+        #"MonojetBackup",
         #"DisplacedDimuonDijet",
-        "EleMu",
-        "PhotonMET",
-        "HTDisplacedJets"
+        #"EleMu",
+        #"PhotonMET",
+        #"HTDisplacedJets"
         ),
     
     # -- The instance name of the reco::GenParticles collection
@@ -108,6 +108,13 @@ hltExoticaValidator = cms.EDAnalyzer(
     parametersEta      = cms.vdouble(48, -2.400, 2.400),
     parametersPhi      = cms.vdouble(50, -3.142, 3.142),
     parametersDxy      = cms.vdouble(50, -0.015, 0.015),
+    
+    # Setup gen matching, if you only want to select gen particles from certain ancesters. 
+    targetAncester = cms.double(1000006),  
+    vetoAncester = cms.double(5),  
+    specialGenMatching = cms.bool(False),
+    genParticleIdList = cms.vdouble(), 
+    genParticleNumberCut = cms.vdouble(2),
 
     # Definition of generic cuts on generated and reconstructed objects (note that
     # these cuts can be overloaded inside a particular analysis)

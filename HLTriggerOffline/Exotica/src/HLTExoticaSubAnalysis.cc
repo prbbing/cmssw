@@ -30,11 +30,15 @@ HLTExoticaSubAnalysis::HLTExoticaSubAnalysis(const edm::ParameterSet & pset,
 					     edm::ConsumesCollector && consCollector) :
     _pset(pset),
     _analysisname(analysisname),
-    _minCandidates(0),
     _hltProcessName(pset.getParameter<std::string>("hltProcessName")),
     _genParticleLabel(pset.getParameter<std::string>("genParticleLabel")),
     _trigResultsLabel("TriggerResults", "", _hltProcessName),
     _beamSpotLabel(pset.getParameter<std::string>("beamSpotLabel")),
+    _targetAncester(pset.getParameter<double>("targetAncester")),
+    _vetoAncester(pset.getParameter<double>("vetoAncester")),
+    _specialGenMatching(pset.getParameter<bool>("specialGenMatching")),
+    _genParticleIdList(pset.getParameter<std::vector<double> >("genParticleIdList")),
+    _genParticleNumberCut(pset.getParameter<std::vector<double> >("genParticleNumberCut")),
     _parametersEta(pset.getParameter<std::vector<double> >("parametersEta")),
     _parametersPhi(pset.getParameter<std::vector<double> >("parametersPhi")),
     _parametersTurnOn(pset.getParameter<std::vector<double> >("parametersTurnOn")),
@@ -68,6 +72,26 @@ HLTExoticaSubAnalysis::HLTExoticaSubAnalysis(const edm::ParameterSet & pset,
     if (anpset.exists("parametersTurnOn")) {
         _parametersTurnOn = anpset.getParameter<std::vector<double> >("parametersTurnOn");
         _pset.insert(true, "parametersTurnOn", anpset.retrieve("parametersTurnOn"));
+    }
+    if (anpset.exists("targetAncester")) {
+        _targetAncester = anpset.getParameter<double>("targetAncester");
+        _pset.insert(true, "targetAncester", anpset.retrieve("targetAncester"));
+    }
+    if (anpset.exists("vetoAncester")) {
+        _vetoAncester = anpset.getParameter<double>("vetoAncester");
+        _pset.insert(true, "vetoAncester", anpset.retrieve("vetoAncester"));
+    }
+    if (anpset.exists("specialGenMatching")) {
+        _specialGenMatching = anpset.getParameter<bool>("specialGenMatching");
+        _pset.insert(true, "specialGenMatching", anpset.retrieve("specialGenMatching"));
+    }
+    if (anpset.exists("genParticleIdList")) {
+        _genParticleIdList = anpset.getParameter<std::vector<double> >("genParticleIdList");
+        _pset.insert(true, "genParticleIdList", anpset.retrieve("genParticleIdList"));
+    }
+    if (anpset.exists("genParticleNumberCut")) {
+        _genParticleNumberCut = anpset.getParameter<std::vector<double> >("genParticleNumberCut");
+        _pset.insert(true, "genParticleNumberCut", anpset.retrieve("genParticleNumberCut"));
     }
     if (anpset.exists("parametersEta")) {
         _parametersEta = anpset.getParameter<std::vector<double> >("parametersEta");
@@ -134,7 +158,6 @@ HLTExoticaSubAnalysis::HLTExoticaSubAnalysis(const edm::ParameterSet & pset,
     /// Get the vector of paths to check, for this particular analysis.
     _hltPathsToCheck = anpset.getParameter<std::vector<std::string> >("hltPathsToCheck");
     /// Get the minimum candidates, for this particular analysis.
-    _minCandidates = anpset.getParameter<unsigned int>("minCandidates");
 
 } /// End Constructor
 
@@ -423,14 +446,27 @@ void HLTExoticaSubAnalysis::analyze(const edm::Event & iEvent, const edm::EventS
         for (size_t i = 0; i < cols->genParticles->size(); ++i) {
 	    //std::cout << "Now matchesGen.size() is " << matchesGen.size() << std::endl;
             if (_genSelectorMap[it->first]->operator()(cols->genParticles->at(i))) {
-                const reco::Candidate* cand = &(cols->genParticles->at(i));
-		//std::cout << "Found good cand: cand->pt() = " << cand->pt() << std::endl;
-		//matchesGen.push_back(MatchStruct(cand, it->first));
-		/// We are going to make a fake reco::LeafCandidate, with our particleType as the pdgId.
-		/// This is an alternative to the older implementation with MatchStruct.
-		reco::LeafCandidate v(0,cand->p4(),cand->vertex(),it->first,0,true);
-
-                matchesGen.push_back(v);
+                //Do the special genmatching here. 
+                if(_specialGenMatching)
+                  { 
+                    if(genMatching(cols->genParticles->at(i), _targetAncester, _vetoAncester))
+                      {
+                        const reco::Candidate* cand = &(cols->genParticles->at(i));
+		        //std::cout << "Found good cand: cand->pt() = " << cand->pt() << std::endl;
+		        //matchesGen.push_back(MatchStruct(cand, it->first));
+		        /// We are going to make a fake reco::LeafCandidate, with our particleType as the pdgId.
+		        /// This is an alternative to the older implementation with MatchStruct.
+		        reco::LeafCandidate v(0,cand->p4(),cand->vertex(),it->first,0,true);
+                        matchesGen.push_back(v);
+                      }
+                  }
+                else
+                  {
+                    const reco::Candidate* cand = &(cols->genParticles->at(i));
+		    reco::LeafCandidate v(0,cand->p4(),cand->vertex(),it->first,0,true);
+                    matchesGen.push_back(v);
+                    
+                  }
             }
         }
     }
@@ -479,7 +515,7 @@ void HLTExoticaSubAnalysis::analyze(const edm::Event & iEvent, const edm::EventS
     /// GEN CASE ///
     //////////////// 
     if(verbose>2) std::cerr << "### matchesGen.size() = " << matchesGen.size() << std::endl;
-    if( matchesGen.size() >= _minCandidates) {  // FIXME: A bug is potentially here: what about the mixed channels?
+    if(genNumberFilter(matchesGen, _genParticleIdList, _genParticleNumberCut)) {  // FIXME: A bug is potentially here: what about the mixed channels?
       // Okay, there are enough candidates. Move on!
 
       // Filling the gen/reco objects (eff-denominators):
@@ -588,7 +624,7 @@ void HLTExoticaSubAnalysis::analyze(const edm::Event & iEvent, const edm::EventS
     if(verbose>2) std::cerr << "### matchesReco.size() = " << matchesReco.size() << std::endl;
 
     {
-	if(matchesReco.size() < _minCandidates) return; // FIXME: A bug is potentially here: what about the mixed channels?
+	if(genNumberFilter(matchesReco, _genParticleIdList, _genParticleNumberCut)) return; // FIXME: A bug is potentially here: what about the mixed channels?
 
 	// Okay, there are enough candidates. Move on!
     
@@ -1141,6 +1177,53 @@ void HLTExoticaSubAnalysis::initSelector(const unsigned int & objtype)
     FIXME: ERROR NOT IMPLEMENTED
     }*/
 }
+bool HLTExoticaSubAnalysis::genNumberFilter(std::vector<reco::LeafCandidate> genList, std::vector<double> idList, std::vector<double> cutList)
+{
+  bool pass = false;
+  if(idList.size() == 0)
+    pass = (genList.size() >= cutList.at(0) ? true : false); 
+  else
+    {
+      for(uint i = 0; i < idList.size(); i++)
+        { 
+          double number = 0;
+          for(uint j = 0; j < genList.size(); j++)
+            {
+              if(genList[j].pdgId() == idList.at(i))
+                number++;
+            }
+          if(number >= cutList.at(i))
+            pass = true; 
+        }
+     }
+  return pass;
+}
+
+
+
+//Only select particles coming from certain ancesters.  
+bool HLTExoticaSubAnalysis::genMatching(const reco::GenParticle &genParticle, double selectId, double vetoId)
+{
+ bool matched = false;
+  if(genParticle.mother())
+    {
+      int n = genParticle.numberOfMothers();
+      for(int j = 0; j < n; ++ j)
+        {
+          const reco::GenParticle *mother = (const reco::GenParticle*) genParticle.mother(j);
+          if(fabs(mother->pdgId()) == selectId)
+            matched = true;
+          else if(fabs(mother->pdgId()) == vetoId)
+            {
+              matched = false;
+              break;
+            }
+          else
+            matched = genMatching(*mother, selectId, vetoId);
+        }
+   }
+  return matched;
+} 
 
 // Insert the HLT candidates
 void HLTExoticaSubAnalysis::insertCandidates(const unsigned int & objType, const EVTColContainer * cols, std::vector<reco::LeafCandidate> * matches, 

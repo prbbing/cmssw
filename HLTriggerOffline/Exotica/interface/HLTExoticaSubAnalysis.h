@@ -108,7 +108,9 @@ private:
                           std::vector<reco::LeafCandidate> * matches, 
                           std::map<int,double> & theSumEt,
                           std::map<int, std::vector<const reco::Track*> > & trkObjs);
-
+    //Special gen matching function to only select gen particles from a given ancester or to veto gen particles from a given ancester.  
+    bool genMatching(const reco::GenParticle &genParticle, double selectId, double vetoId);
+    bool genNumberFilter(std::vector<reco::LeafCandidate> genList, std::vector<double> idList, std::vector<double> cutList);
     /// The internal functions to book and fill histograms
     void bookHist(DQMStore::IBooker &iBooker, const std::string & source, const std::string & objType,
                   const std::string & variable);
@@ -121,8 +123,6 @@ private:
     /// The name of this sub-analysis
     std::string _analysisname;
 
-    /// The minimum number of reco/gen candidates needed by the analysis
-    unsigned int _minCandidates;
 
     /// The hlt paths to check for.
     std::vector<std::string> _hltPathsToCheck;
@@ -137,6 +137,14 @@ private:
     edm::InputTag _trigResultsLabel;
     edm::InputTag _beamSpotLabel;
     std::map<unsigned int, edm::InputTag> _recLabels;
+    //genMatchingId for each category. 
+    std::map<unsigned int, double> _genMatchingId;
+    //Special gen matching parameters.
+    double _targetAncester;
+    double _vetoAncester;
+    bool _specialGenMatching;
+    std::vector<double> _genParticleIdList;
+    std::vector<double> _genParticleNumberCut;
     /// And also the tokens to get the object collections
     edm::EDGetTokenT<reco::GenParticleCollection> _genParticleToken;
     edm::EDGetTokenT<edm::TriggerResults> _trigResultsToken;
